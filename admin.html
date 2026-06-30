@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriBox 经营看板</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #f5fbf2; min-height: 100vh; padding: 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { color: #2E7D32; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .stats { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card {
+      background: white; border-radius: 16px; padding: 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      flex: 1; min-width: 160px;
+    }
+    .stat-card .label { font-size: 13px; color: #666; }
+    .stat-card .value { font-size: 24px; font-weight: 700; color: #2E7D32; margin-top: 4px; }
+    .table-wrapper {
+      background: white; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 1300px; }
+    th, td {
+      padding: 10px 12px; border-bottom: 1px solid #eef6e9; text-align: left; white-space: nowrap;
+    }
+    th { background: #f9fdf7; color: #2E7D32; font-weight: 600; font-size: 13px; }
+    td { font-size: 13px; color: #333; }
+    .price { font-weight: 600; color: #1b5e20; }
+    .green { color: #2E7D32; }
+    .red { color: #f44336; }
+    .loading { text-align: center; padding: 40px; color: #999; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🥗 NutriBox 经营看板 <span style="font-size:14px;color:#666;">（仅管理者可见）</span></h1>
+  <div class="stats" id="statsArea"></div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>性别</th>
+          <th>年龄</th>
+          <th>身高</th>
+          <th>体重</th>
+          <th>目标</th>
+          <th>运动</th>
+          <th>过敏原</th>
+          <th>禁忌</th>
+          <th>口味</th>
+          <th>配送餐次</th>
+          <th>上门</th>
+          <th>地址</th>
+          <th>手机</th>
+          <th>食材成本</th>
+          <th>包装费</th>
+          <th>配送费</th>
+          <th>总价</th>
+          <th>食谱预览</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="19" class="loading">数据加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function extractField(msg, key) {
+    const regex = new RegExp(`${key}：([^，]+)`);
+    const match = msg.match(regex);
+    return match ? match[1] : '-';
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch('/api/list');
+      const items = await res.json();
+      const tbody = document.getElementById('tableBody');
+      if (!Array.isArray(items) || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="19" class="loading">暂无数据</td></tr>';
+        return;
+      }
+
+      let totalOrders = 0, totalRevenue = 0, totalFoodCost = 0, totalPacking = 0, totalDelivery = 0;
+
+      tbody.innerHTML = '';
+      items.reverse().forEach(item => {
+        let record;
+        try { record = JSON.parse(item); } catch(e) { record = {}; }
+
+        const msg = record.userMessage || '';
+        const gender = extractField(msg, '性别');
+        const age = extractField(msg, '年龄');
+        const height = extractField(msg, '身高');
+        const weight = extractField(msg, '体重');
+        const goal = extractField(msg, '目标');
+        const sport = extractField(msg, '运动生活方式');
+        const allergies = extractField(msg, '过敏原');
+        const taboos = extractField(msg, '饮食禁忌');
+        const taste = extractField(msg, '口味偏好');
+        const mealPlan = record.mealPlan || extractField(msg, '配送餐次') || '-';
+        const needDelivery = record.needDelivery || (extractField(msg, '送货地址') === '不需要配送' ? '否' : '是');
+        const address = extractField(msg, '送货地址');
+        const phone = extractField(msg, '手机');
+        const time = record.timestamp ? new Date(record.timestamp).toLocaleString('zh-CN') : '';
+
+        const price = record.price || {};
+        const foodCost = parseFloat(price.foodCost) || 0;
+        const packing = parseInt(price.packingTotal) || 0;
+        const delivery = parseInt(price.deliveryTotal) || 0;
+        const finalPrice = parseInt(price.finalPrice) || 0;
+
+        totalOrders++; totalRevenue += finalPrice; totalFoodCost += foodCost;
+        totalPacking += packing; totalDelivery += delivery;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${time}</td>
+          <td>${gender}</td>
+          <td>${age}</td>
+          <td>${height}</td>
+          <td>${weight}</td>
+          <td>${goal}</td>
+          <td>${sport}</td>
+          <td>${allergies}</td>
+          <td>${taboos}</td>
+          <td>${taste}</td>
+          <td>${mealPlan}</td>
+          <td>${needDelivery}</td>
+          <td>${address}</td>
+          <td>${phone}</td>
+          <td class="price">¥${foodCost.toFixed(1)}</td>
+          <td>¥${packing}</td>
+          <td>¥${delivery}</td>
+          <td class="price green">¥${finalPrice}</td>
+          <td style="max-width:150px; word-break: break-all; white-space: normal;">${(record.generatedReply || '').substring(0, 100)}...</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      document.getElementById('statsArea').innerHTML = `
+        <div class="stat-card"><div class="label">总订单数</div><div class="value">${totalOrders}</div></div>
+        <div class="stat-card"><div class="label">总营收</div><div class="value">¥${totalRevenue}</div></div>
+        <div class="stat-card"><div class="label">食材总成本</div><div class="value">¥${totalFoodCost.toFixed(1)}</div></div>
+        <div class="stat-card"><div class="label">包装总成本</div><div class="value">¥${totalPacking}</div></div>
+        <div class="stat-card"><div class="label">配送总成本</div><div class="value">¥${totalDelivery}</div></div>
+        <div class="stat-card"><div class="label">预估毛利</div><div class="value">¥${(totalRevenue - totalFoodCost - totalPacking - totalDelivery).toFixed(1)}</div></div>
+      `;
+    } catch (error) {
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="19" class="loading red">加载失败：${error.message}</td></tr>`;
+    }
+  }
+
+  loadData();
+</script>
+</body>
+</html>

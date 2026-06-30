@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>NutriBox · AI 专属营养师</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(160deg, #f5fbf2 0%, #e0f0da 100%);
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+    }
+    .container { width: 100%; max-width: 480px; margin: 0 auto; }
+    .brand-header { text-align: center; margin: 12px 0 24px; }
+    .brand-logo { width: 56px; height: 56px; background: #2E7D32; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(46,125,50,0.25); margin-bottom: 8px; color: white; font-size: 28px; }
+    h1 { font-size: 22px; font-weight: 700; color: #1b3b1b; }
+    .subtitle { font-size: 14px; color: #5a7c5a; margin-top: 2px; }
+    .card { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); border-radius: 28px; padding: 20px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
+    .guide-card { background: linear-gradient(135deg, #f1f9ee 0%, #eaf5e2 100%); border: 1px solid rgba(46,125,50,0.15); }
+    .guide-card p { margin: 6px 0; color: #2E7D32; font-weight: 500; font-size: 15px; }
+    .example { font-size: 13px; color: #5a7c5a; margin-top: 8px; background: rgba(46,125,50,0.05); padding: 8px 12px; border-radius: 12px; }
+    .progress-wrap { display: flex; justify-content: space-between; margin-bottom: 16px; }
+    .progress-step { flex: 1; height: 6px; background: #e0e8d5; border-radius: 3px; margin: 0 3px; }
+    .progress-step.active { background: #2E7D32; }
+    .progress-step.completed { background: #81c784; }
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+    label { font-size: 13px; font-weight: 600; color: #2E7D32; display: block; margin-bottom: 4px; }
+    input, select, textarea {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #e0e8d5; border-radius: 16px;
+      font-size: 15px; background: #ffffff; transition: 0.2s; outline: none; font-family: inherit; color: #1b3b1b;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #2E7D32; box-shadow: 0 0 0 3px rgba(46,125,50,0.1); }
+    .row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .row > div { flex: 1; }
+    .bmi-inline { font-size: 12px; color: #5a7c5a; margin: 8px 0; font-weight: 500; }
+    .bmi-status { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #e8f5e9; color: #2E7D32; font-size: 12px; font-weight: 600; margin-left: 6px; }
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
+    .checkbox-pill { border: 1.5px solid #e0e8d5; border-radius: 20px; padding: 6px 14px; font-size: 13px; cursor: pointer; background: #fff; transition: 0.2s; user-select: none; }
+    .checkbox-pill.selected { background: #2E7D32; border-color: #2E7D32; color: white; }
+    .btn { background: #2E7D32; color: white; font-weight: 600; font-size: 16px; padding: 14px; border: none; border-radius: 16px; width: 100%; cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn:hover { background: #256b28; }
+    .btn:disabled { background: #a5d6a7; cursor: not-allowed; }
+    .btn-outline { background: transparent; border: 1.5px solid #2E7D32; color: #2E7D32; }
+    .btn-outline:hover { background: #f1f9ee; }
+    .nav-buttons { display: flex; gap: 10px; margin-top: 16px; }
+    .result-card { background: white; border-radius: 24px; padding: 20px; margin-top: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.06); display: none; }
+    .day-card { margin-bottom: 12px; border: 1px solid #eef6e9; border-radius: 18px; overflow: hidden; }
+    .day-header { background: #f8fdf6; padding: 12px 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .day-body { padding: 0 16px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s; }
+    .day-body.open { max-height: 800px; padding: 12px 16px; }
+    .meal-item { margin: 8px 0; padding: 8px 12px; background: #f8fdf6; border-radius: 12px; }
+    .meal-name { font-weight: 600; }
+    .subscribe-float { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1b5e20; color: white; padding: 12px 24px; border-radius: 30px; font-weight: 600; box-shadow: 0 10px 25px rgba(27,94,32,0.3); cursor: pointer; z-index: 10; display: none; align-items: center; gap: 6px; }
+    .footer-note { font-size: 11px; color: #999; text-align: center; margin-top: 24px; }
+    .custom-allergy-input { margin-top: 8px; display: none; }
+    .custom-allergy-input.show { display: block; }
+    .delivery-toggle { display: flex; gap: 12px; margin: 12px 0; }
+    .delivery-toggle label { display: flex; align-items: center; gap: 4px; font-weight: 500; cursor: pointer; }
+    .delivery-toggle input[type="radio"] { width: auto; margin-right: 4px; }
+    .address-box { display: none; }
+    .address-box.show { display: block; }
+    .error-border { border-color: #f44336 !important; }
+    .price-card {
+      background: linear-gradient(135deg, #2E7D32, #1b5e20);
+      color: white; border-radius: 18px; padding: 16px; margin: 16px 0; text-align: center;
+    }
+    .price-card .price { font-size: 28px; font-weight: 700; margin: 8px 0; }
+    .price-card .btn-white { background: white; color: #2E7D32; font-weight: 600; }
+    .cost-detail { font-size: 13px; opacity: 0.9; margin-top: 8px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="brand-header">
+    <div class="brand-logo">🥗</div>
+    <h1>NutriBox</h1>
+    <div class="subtitle">你的专属 AI 营养师</div>
+  </div>
+  <div class="card guide-card">
+    <p>👋 只需3步，获取你的 <strong>7天个性化食谱</strong></p>
+    <p style="font-size:13px;">1️⃣ 身体数据与目标 → 2️⃣ 饮食偏好 → 3️⃣ 配送与联系方式</p>
+    <div class="example">💡 示例：女，30岁，160cm，70kg，想减脂，不吃海鲜，口味清淡</div>
+  </div>
+  <div class="progress-wrap" id="progressBar">
+    <div class="progress-step active" id="step1"></div>
+    <div class="progress-step" id="step2"></div>
+    <div class="progress-step" id="step3"></div>
+  </div>
+
+  <div class="card" id="formCard">
+    <form id="nutriForm" novalidate>
+      <!-- 步骤1：身体数据与目标 -->
+      <div class="form-section active" id="section1">
+        <div class="row">
+          <div><label>性别</label><select id="gender"><option value="">请选择</option><option value="男">男</option><option value="女">女</option></select></div>
+          <div><label>年龄</label><input type="number" id="age" placeholder="18-60" min="18" max="60"></div>
+        </div>
+        <div class="row">
+          <div><label>身高 (cm)</label><input type="number" id="height" placeholder="170" oninput="calcBMI()"></div>
+          <div><label>体重 (kg)</label><input type="number" id="weight" placeholder="65" oninput="calcBMI()"></div>
+        </div>
+        <div class="bmi-inline" id="bmiDisplay"></div>
+        <div style="margin:12px 0 8px;"><label>健康目标</label></div>
+        <select id="goal">
+          <option value="">请选择</option><option value="减脂">减脂</option><option value="增肌">增肌</option>
+          <option value="维持">维持体重</option><option value="饮食调理">饮食调理</option>
+        </select>
+        <div style="margin-top:12px;"><label>运动生活方式</label></div>
+        <select id="sportLifestyle">
+          <option value="">请选择</option>
+          <option value="久坐不动">久坐不动</option>
+          <option value="几乎不运动">几乎不运动</option>
+          <option value="每周1-2次">每周1-2次</option>
+          <option value="每周3-5次">每周3-5次</option>
+          <option value="高强度训练者">高强度训练者</option>
+        </select>
+        <div class="nav-buttons">
+          <button type="button" class="btn" onclick="nextStep(2)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- 步骤2：饮食偏好 -->
+      <div class="form-section" id="section2">
+        <label>过敏原（可多选）</label>
+        <div class="checkbox-group" id="allergyGroup">
+          <span class="checkbox-pill" data-value="海鲜">海鲜</span>
+          <span class="checkbox-pill" data-value="牛奶">牛奶</span>
+          <span class="checkbox-pill" data-value="鸡蛋">鸡蛋</span>
+          <span class="checkbox-pill" data-value="坚果">坚果</span>
+          <span class="checkbox-pill" data-value="麸质">麸质</span>
+          <span class="checkbox-pill" data-value="大豆">大豆</span>
+          <span class="checkbox-pill" data-value="其他">其他</span>
+        </div>
+        <div class="custom-allergy-input" id="customAllergyBox">
+          <input type="text" id="customAllergy" placeholder="请输入其他过敏原">
+        </div>
+        <div class="row">
+          <div><label>饮食禁忌 *</label><input type="text" id="taboos" placeholder="如：不吃香菜、纯素"></div>
+        </div>
+        <div><label>口味偏好（可多选）</label></div>
+        <div class="checkbox-group" id="tasteGroup">
+          <span class="checkbox-pill" data-value="清淡">清淡</span>
+          <span class="checkbox-pill" data-value="辣">辣</span>
+          <span class="checkbox-pill" data-value="酸甜">酸甜</span>
+          <span class="checkbox-pill" data-value="咸香">咸香</span>
+          <span class="checkbox-pill" data-value="酱香">酱香</span>
+          <span class="checkbox-pill" data-value="蒜香">蒜香</span>
+        </div>
+        <div style="margin-top:12px;"><label>配送餐次 *</label>
+        <select id="mealPlan">
+          <option value="">请选择</option>
+          <option value="仅早餐">仅早餐</option>
+          <option value="仅午餐">仅午餐</option>
+          <option value="仅晚餐">仅晚餐</option>
+          <option value="早餐+午餐">早餐+午餐</option>
+          <option value="午餐+晚餐">午餐+晚餐</option>
+          <option value="早餐+晚餐">早餐+晚餐</option>
+          <option value="三餐全包">三餐全包</option>
+        </select></div>
+        <div class="nav-buttons">
+          <button type="button" class="btn btn-outline" onclick="prevStep(1)">← 上一步</button>
+          <button type="button" class="btn" onclick="nextStep(3)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- 步骤3：配送与联系方式 -->
+      <div class="form-section" id="section3">
+        <label>是否需要送货上门？</label>
+        <div class="delivery-toggle">
+          <label><input type="radio" name="needDelivery" value="是" checked onchange="toggleAddress()"> 是</label>
+          <label><input type="radio" name="needDelivery" value="否" onchange="toggleAddress()"> 否</label>
+        </div>
+        <div class="address-box show" id="addressBox">
+          <label>送货上门地址</label>
+          <input type="text" id="address" placeholder="请输入详细地址">
+        </div>
+        <div style="margin-top:12px;"><label>手机号码 *</label><input type="tel" id="phone" placeholder="便于联系"></div>
+        <div style="margin-top:12px;"><label>备注（其他需求）</label><textarea id="notes" rows="2" placeholder="如：需要避免的食材等"></textarea></div>
+        <div class="nav-buttons">
+          <button type="button" class="btn btn-outline" onclick="prevStep(2)">← 上一步</button>
+          <button type="submit" class="btn" id="submitBtn">✨ 生成专属周食谱</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="result-card" id="resultCard"></div>
+  <div class="subscribe-float" id="subscribeFloat" onclick="alert('订阅功能即将上线')">📦 一键订阅本周配餐</div>
+  <div class="footer-note">⚠️ 食谱由 AI 生成，仅供健康人群参考，不构成医疗建议。</div>
+</div>
+
+<!-- 动态加载 html2canvas 和 jspdf -->
+<script>
+  function loadScripts(callback) {
+    if (window.html2canvas && window.jspdf) return callback();
+    let loaded = 0;
+    const check = () => { loaded++; if (loaded === 2) callback(); };
+
+    if (!window.html2canvas) {
+      const s1 = document.createElement('script');
+      s1.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      s1.onload = check;
+      document.head.appendChild(s1);
+    } else loaded++;
+
+    if (!window.jspdf) {
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s2.onload = check;
+      document.head.appendChild(s2);
+    } else loaded++;
+  }
+</script>
+
+<script>
+  // 价格配置
+  const PRICE_CONFIG = {
+    packingFee: 5,
+    deliveryFee: 15
+  };
+
+  function getMealCount(mealPlan) {
+    const mapping = {
+      '仅早餐': 1, '仅午餐': 1, '仅晚餐': 1,
+      '早餐+午餐': 2, '午餐+晚餐': 2, '早餐+晚餐': 2, '三餐全包': 3
+    };
+    return (mapping[mealPlan] || 0) * 5;
+  }
+
+  // 步骤切换
+  let currentStep = 1;
+  function showStep(step) {
+    document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+    document.getElementById('section'+step).classList.add('active');
+    document.querySelectorAll('.progress-step').forEach((el, idx) => {
+      el.classList.remove('active','completed');
+      if (idx+1 < step) el.classList.add('completed');
+      if (idx+1 === step) el.classList.add('active');
+    });
+    currentStep = step;
+  }
+
+  function validateStep(step) {
+    const fields = {
+      1: ['gender', 'age', 'height', 'weight', 'goal', 'sportLifestyle'],
+      2: ['taboos', 'mealPlan'],
+      3: ['phone']
+    };
+    const stepFields = fields[step] || [];
+    for (let id of stepFields) {
+      const el = document.getElementById(id);
+      if (!el || !el.value.trim()) {
+        alert('请填写当前步骤的所有必填项');
+        if (el) el.focus();
+        document.querySelectorAll('.error-border').forEach(e => e.classList.remove('error-border'));
+        if (el) el.classList.add('error-border');
+        return false;
+      }
+    }
+    if (step === 3) {
+      const needDelivery = document.querySelector('input[name="needDelivery"]:checked');
+      if (needDelivery && needDelivery.value === '是') {
+        const address = document.getElementById('address');
+        if (!address.value.trim()) {
+          alert('请填写送货上门地址');
+          address.focus();
+          address.classList.add('error-border');
+          return false;
+        }
+      }
+    }
+    document.querySelectorAll('.error-border').forEach(e => e.classList.remove('error-border'));
+    return true;
+  }
+
+  window.nextStep = (s) => {
+    if (!validateStep(currentStep)) return;
+    showStep(s);
+  };
+
+  window.prevStep = (s) => showStep(s);
+
+  window.calcBMI = () => {
+    const h = parseFloat(document.getElementById('height').value);
+    const w = parseFloat(document.getElementById('weight').value);
+    const display = document.getElementById('bmiDisplay');
+    if (!h || !w || h<100 || w<20) { display.innerHTML = ''; return; }
+    const bmi = (w / ((h/100)**2)).toFixed(1);
+    let status = '', color = '#2E7D32';
+    if (bmi<18.5) { status='偏瘦'; color='#ff9800'; }
+    else if (bmi<24) { status='正常'; color='#2E7D32'; }
+    else { status='超重'; color='#f44336'; }
+    display.innerHTML = `BMI：${bmi} <span class="bmi-status" style="background:${color}20;color:${color}">${status}</span>`;
+  };
+
+  // 过敏原“其他”联动
+  document.querySelectorAll('#allergyGroup .checkbox-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+      this.classList.toggle('selected');
+      const otherSelected = document.querySelector('#allergyGroup .checkbox-pill[data-value="其他"].selected');
+      const box = document.getElementById('customAllergyBox');
+      if (otherSelected) {
+        box.classList.add('show');
+      } else {
+        box.classList.remove('show');
+        document.getElementById('customAllergy').value = '';
+      }
+    });
+  });
+
+  // 口味多选
+  document.querySelectorAll('#tasteGroup .checkbox-pill').forEach(pill => {
+    pill.addEventListener('click', function() { this.classList.toggle('selected'); });
+  });
+
+  // 地址切换
+  window.toggleAddress = () => {
+    const needDelivery = document.querySelector('input[name="needDelivery"]:checked').value;
+    const box = document.getElementById('addressBox');
+    if (needDelivery === '是') {
+      box.classList.add('show');
+    } else {
+      box.classList.remove('show');
+      document.getElementById('address').value = '';
+    }
+  };
+
+  // 表单提交
+  const form = document.getElementById('nutriForm');
+  const resultCard = document.getElementById('resultCard');
+  const submitBtn = document.getElementById('submitBtn');
+  const floatBtn = document.getElementById('subscribeFloat');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const allRequired = ['gender','age','height','weight','goal','sportLifestyle','taboos','mealPlan','phone'];
+    for (let id of allRequired) {
+      const el = document.getElementById(id);
+      if (!el.value.trim()) {
+        alert('请填写所有必填项');
+        el.focus();
+        return;
+      }
+    }
+    const needDelivery = document.querySelector('input[name="needDelivery"]:checked').value;
+    if (needDelivery === '是') {
+      const address = document.getElementById('address');
+      if (!address.value.trim()) { alert('请填写送货地址'); address.focus(); return; }
+    }
+
+    const gender = document.getElementById('gender').value;
+    const age = document.getElementById('age').value;
+    const height = document.getElementById('height').value;
+    const weight = document.getElementById('weight').value;
+    const goal = document.getElementById('goal').value;
+    const sport = document.getElementById('sportLifestyle').value;
+    const taboos = document.getElementById('taboos').value;
+
+    const selectedAllergies = Array.from(document.querySelectorAll('#allergyGroup .checkbox-pill.selected'))
+      .map(p => p.dataset.value)
+      .filter(v => v !== '其他');
+    const customAllergy = document.getElementById('customAllergy').value.trim();
+    if (document.querySelector('#allergyGroup .checkbox-pill[data-value="其他"].selected') && customAllergy) {
+      selectedAllergies.push(customAllergy);
+    }
+    const allergies = selectedAllergies.length > 0 ? selectedAllergies.join('、') : '无';
+
+    const taste = Array.from(document.querySelectorAll('#tasteGroup .checkbox-pill.selected'))
+      .map(el => el.dataset.value).join('、') || '均可';
+
+    const mealPlan = document.getElementById('mealPlan').value;
+    const address = needDelivery === '是' ? document.getElementById('address').value.trim() : '不需要配送';
+    const phone = document.getElementById('phone').value;
+    const notes = document.getElementById('notes').value || '无';
+
+    const prompt = `性别：${gender}，年龄：${age}岁，身高：${height}cm，体重：${weight}kg，目标：${goal}，运动生活方式：${sport}，过敏原：${allergies}，饮食禁忌：${taboos}，口味偏好：${taste}，配送餐次：${mealPlan}，送货地址：${address}，手机：${phone}，备注：${notes}。请生成7天食谱。`;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'AI 正在分析...';
+    resultCard.style.display = 'block';
+    resultCard.innerHTML = '<div style="text-align:center;padding:30px;color:#2E7D32;">🥦 正在生成方案与实时价格…</div>';
+    floatBtn.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/proxy', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ message: prompt, mealPlan, needDelivery })
+      });
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        throw new Error('服务器返回异常，请稍后重试');
+      }
+      if (data.error) {
+        resultCard.innerHTML = `<p style="color:red;">❌ ${data.error}</p>`;
+      } else {
+        const raw = data.reply;
+        const mealCount = getMealCount(mealPlan);
+        const packingFee = mealCount * PRICE_CONFIG.packingFee;
+        const deliveryFee = needDelivery === '是' ? PRICE_CONFIG.deliveryFee * 5 : 0;
+        const priceHTML = `
+          <div class="price-card">
+            <p>🎉 你的专属实时价格</p>
+            <p style="font-size:14px;">基于食谱食材市场价 + 配送餐次计算</p>
+            <div class="price">（请查看后台精确价格）</div>
+            <div class="cost-detail">
+              包装费 ￥${packingFee}
+              ${deliveryFee > 0 ? ` + 配送费 ￥${deliveryFee}` : ''}
+              <br>（食材成本及最终价格见订单确认）
+            </div>
+            <button class="btn btn-white" style="margin-top:12px;" onclick="alert('订阅功能即将上线')">立即订阅本周餐盒</button>
+          </div>
+        `;
+
+        const basicHtml = simpleMarkdownToHTML(raw);
+        const cardHtml = createDayCards(basicHtml);
+        resultCard.innerHTML = priceHTML + cardHtml;
+
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'btn';
+        exportBtn.style.marginBottom = '12px';
+        exportBtn.textContent = '📥 下载 PDF';
+        exportBtn.onclick = () => {
+          const allBodies = document.querySelectorAll('.day-body');
+          allBodies.forEach(body => body.classList.add('open'));
+
+          loadScripts(() => {
+            const element = document.getElementById('resultCard');
+            const clone = element.cloneNode(true);
+            clone.querySelectorAll('button').forEach(btn => btn.remove());
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.width = element.offsetWidth + 'px';
+            clone.style.display = 'block';
+            document.body.appendChild(clone);
+
+            html2canvas(clone, { scale: 2, useCORS: true }).then(canvas => {
+              document.body.removeChild(clone);
+              const imgData = canvas.toDataURL('image/png');
+              const { jsPDF } = window.jspdf;
+              const pdf = new jsPDF('p', 'mm', 'a4');
+              const pageWidth = pdf.internal.pageSize.getWidth();
+              const pageHeight = pdf.internal.pageSize.getHeight();
+              const imgWidth = pageWidth - 20;
+              const imgHeight = (canvas.height * imgWidth) / canvas.width;
+              let heightLeft = imgHeight;
+              let position = 10;
+
+              pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+              heightLeft -= pageHeight;
+
+              while (heightLeft > 0) {
+                position = heightLeft - imgHeight + 10;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+              }
+
+              pdf.save('NutriBox一周食谱.pdf');
+            });
+          });
+        };
+        resultCard.insertBefore(exportBtn, resultCard.firstChild);
+
+        floatBtn.style.display = 'flex';
+        const firstBody = document.querySelector('.day-body');
+        if (firstBody) firstBody.classList.add('open');
+      }
+    } catch (err) {
+      resultCard.innerHTML = `<p style="color:red;">网络错误：${err.message}</p>`;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '✨ 生成专属周食谱';
+    }
+  });
+
+  function simpleMarkdownToHTML(md) {
+    let html = md;
+    html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\n/g, '<br>');
+    return html;
+  }
+
+  function createDayCards(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const headings = div.querySelectorAll('h3');
+    if (headings.length === 0) return html;
+    let result = '';
+    headings.forEach((heading) => {
+      const dayText = heading.textContent;
+      let bodyContent = '';
+      let next = heading.nextSibling;
+      while (next && next.nodeName !== 'H3') {
+        bodyContent += next.outerHTML || next.textContent || '';
+        next = next.nextSibling;
+      }
+      result += `
+        <div class="day-card">
+          <div class="day-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('span:last-child').textContent = this.nextElementSibling.classList.contains('open') ? '▲' : '▼'">
+            <span>${dayText}</span>
+            <span>▼</span>
+          </div>
+          <div class="day-body">${bodyContent}</div>
+        </div>
+      `;
+    });
+    return result || html;
+  }
+</script>
+</body>
+</html>
