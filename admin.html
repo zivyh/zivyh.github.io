@@ -92,8 +92,26 @@
 
       tbody.innerHTML = '';
       items.reverse().forEach(item => {
-        let record;
-        try { record = JSON.parse(item); } catch(e) { record = {}; }
+        // let record;
+        // try { record = JSON.parse(item); } catch(e) { record = {}; }
+
+        let record = {};
+      try {
+        // 1. 先把外层解析出来（处理可能存在的字符串形式）
+        const parsedItem = typeof item === 'string' ? JSON.parse(item) : item;
+        
+        // 2. 核心：根据你 Upstash 返回的结构，数据包裹在 element 字段里
+        if (parsedItem && parsedItem.element) {
+          record = typeof parsedItem.element === 'string' 
+            ? JSON.parse(parsedItem.element) 
+            : parsedItem.element;
+        } else {
+          record = parsedItem || {};
+        }
+      } catch(e) { 
+        console.error("解析单条记录失败:", e);
+        record = {}; 
+      }
 
         const msg = record.userMessage || '';
         const gender = extractField(msg, '性别');
