@@ -72,7 +72,7 @@
 
 <script>
   function extractField(msg, key) {
-    const regex = new RegExp(`{key}：([^，]+)`);
+    const regex = new RegExp(`${key}：([^，]+)`);
     const match = msg.match(regex);
     return match ? match[1] : '-';
   }
